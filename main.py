@@ -2,14 +2,13 @@ import asyncio
 import pygame
 import math
 import random
+import sys 
 
 pygame.init()
-WIDTH = 1200
-HEIGHT = 1080
+OG_WIDTH = 1200
+OG_HEIGHT = 1080
 FPS = 60
-screen = pygame.display.set_mode((WIDTH,HEIGHT))
 POINTS = []
-SCALE = 120
 clock = pygame.time.Clock()
 dragging = False
 running = True
@@ -18,6 +17,27 @@ L = 0
 M = 0
 PHASE = []
 projectionMatrix = [[1,0,0] , [0,1,0] ,[0,0,0]]
+
+if sys.platform == "emscripten":
+    import platform
+    
+    WIDTH = int(platform.window.innerWidth)
+    HEIGHT = int(platform.window.innerHeight)
+    platform.window.document.body.style.margin = "0"
+    platform.window.document.body.style.padding = "0"
+    platform.window.document.body.style.overflow = "hidden"
+    platform.window.document.body.style.background = "black"
+else:
+    WIDTH = OG_WIDTH
+    HEIGHT = OG_HEIGHT
+screen = pygame.display.set_mode((WIDTH,HEIGHT))
+
+if sys.platform == "emscripten":
+    platform.window.canvas.style.width ="100vw"
+    platform.window.canvas.style.height="100vh"
+    platform.window.canvas.style.display ="block"
+SCALE_UI = min(WIDTH/OG_WIDTH , HEIGHT / OG_HEIGHT)
+SCALE = 120 * SCALE_UI
 
 def associated_laguere(order,alpha,ro):
     total = 0.0
@@ -162,7 +182,8 @@ def matrix_y_rotation(yAngle):
 
 angleX = 0
 angleY = 0
-font = pygame.font.SysFont(None,30)
+zoom = 1.0
+font = pygame.font.SysFont(None,int(30 * SCALE_UI))
 
 class Button:
     def __init__(self, x,y,width, height , text,value ):
@@ -174,34 +195,34 @@ class Button:
             color = (80,120,200)
         else:
             color = (80,60,70)
-        pygame.draw.rect(screen,color , self.rect, border_radius= 8)
-        pygame.draw.rect(screen,(180,180,190), self.rect,2, border_radius= 8)
+        pygame.draw.rect(screen,color , self.rect, border_radius= int(8 * SCALE_UI))
+        pygame.draw.rect(screen,(180,180,190), self.rect,2, border_radius=int ( 8 * SCALE_UI))
         textSurface = font.render(self.text, True, (255,255,255))
         screen.blit(textSurface , textSurface.get_rect(center = self.rect.center))
     def clicked (self, mousePosition):
         return self.rect.collidepoint (mousePosition)
 
-BUTTON_WIDTH = 40
-BUTTON_HEIGHT = 40
-BUTTON_GAP = 10
+BUTTON_WIDTH = int(40 * SCALE_UI)
+BUTTON_HEIGHT = int(40 * SCALE_UI)
+BUTTON_GAP = int(10 * SCALE_UI)
 subshellnames = {0:"s" , 1:"p" ,2: "d" , 3: "f" , 4:"g"}
 nbuttons = []
 
 for i in range ( 1,6):
-    button = Button(30,100 + (i- 1) *(BUTTON_HEIGHT + BUTTON_GAP) , BUTTON_WIDTH,BUTTON_HEIGHT,f"n ={i}" , i)
+    button = Button(int(30*SCALE_UI),int(100 * SCALE_UI) + (i- 1) *(BUTTON_HEIGHT + BUTTON_GAP) , BUTTON_WIDTH,BUTTON_HEIGHT,f"n ={i}" , i)
     nbuttons.append(button)
 
 def createbuttons_L (N):
     buttons = []
     for l in range(N):
-        button = Button(120,100 + l * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,subshellnames[l],l)
+        button = Button(int(SCALE_UI*120),int(SCALE_UI * 100) + l * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,subshellnames[l],l)
         buttons.append(button)
     return buttons
 
 def createbuttons_M (L):
     buttons = []
     for i , m in enumerate(range(-L,L +1)):
-        button = Button(240,100 + i * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,f"m={m}",m)
+        button = Button(int(240*SCALE_UI),int(SCALE_UI*100) + i * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,f"m={m}",m)
         buttons.append(button)
     return buttons
 
@@ -220,7 +241,7 @@ async def main():
     global angleY
     global lbuttons
     global mbuttons
-
+    global zoom
     POINTS, PHASE = generateClouds(N,L,M)
 
     while running:
@@ -259,6 +280,12 @@ async def main():
 
                     if not buttonClicked:
                         dragging = True
+            elif event.type == pygame.MOUSEWHEEL:
+                if event.y > 0:
+                    zoom *= 1.1
+                elif event.y < 0:
+                    zoom /= 1.1
+                zoom = max(0.4, min(2.5,zoom))
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
@@ -271,7 +298,6 @@ async def main():
 
         rotaionXmatrix = matrix_x_rotation(angleX)
         rotationYmatrix = matrix_y_rotation (angleY)
-
         rotatedpoints = matrixmultiply (POINTS,  rotaionXmatrix)
         rotatedpoints = matrixmultiply (rotatedpoints,  rotationYmatrix)
         projectedPoints = matrixmultiply ( rotatedpoints , projectionMatrix)
@@ -280,13 +306,13 @@ async def main():
         pointstodraw.sort(key = lambda pointstodraw : pointstodraw[1][2])
 
         screen.fill("black")
-
+        ZOOMED_SCALE = SCALE * zoom
         for i, (projectedpoints , rotatedpoints , phasedata) in enumerate ( pointstodraw ):
             projectedX ,projectedY , _ = projectedpoints
-            rotatedX , rotatedY , rotatedZ = rotatedpoints
+            _ , _ , rotatedZ = rotatedpoints
 
-            screenX = WIDTH //2 + int(projectedX * SCALE)
-            screenY = HEIGHT // 2 - int(projectedY * SCALE)
+            screenX = WIDTH //2 + int(projectedX * ZOOMED_SCALE)
+            screenY = HEIGHT // 2 - int(projectedY * ZOOMED_SCALE)
 
             brightness = int(max(80,min(255,160 + rotatedZ * (35))))
 
@@ -296,9 +322,8 @@ async def main():
             elif phasedata [0] == -1:
                 COLOR = (203,brightness, 87)
 
-            pygame.draw.circle(screen,COLOR , (screenX,screenY),2)
-
-        pygame.draw.circle(screen , (255,255,255), (WIDTH //2 , HEIGHT //2 ), 6)
+            pygame.draw.circle(screen,COLOR , (screenX,screenY),max(1,int(2 * SCALE_UI)))
+        pygame.draw.circle(screen , (255,255,255), (WIDTH //2 , HEIGHT //2 ), max(2,int( 6 * SCALE_UI)))
 
         for button in nbuttons:
             button.draw(button.value == N)
@@ -311,9 +336,7 @@ async def main():
 
         pygame.display.flip()
         clock.tick(FPS)
-
         await asyncio.sleep(0)
-
     pygame.quit()
 
 asyncio.run(main())
