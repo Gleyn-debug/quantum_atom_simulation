@@ -175,12 +175,17 @@ def axisPoint(x,y,z):
     screenY = HEIGHT // 2 - int(projectedY * SCALE * zoom)
     return screenX,screenY
 def drawAxes():
+    length = 4
 
-    length =5
+    pygame.draw.line(screen,(40,40,40),axisPoint(-length,-length,0),axisPoint(length,-length,0),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(length,-length,0),axisPoint(length,length,0),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(length,length,0),axisPoint(-length,length,0),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(-length,length,0),axisPoint(-length,-length,0),2)
 
-    pygame.draw.line(screen,"white",axisPoint(-length,0,0),axisPoint(length,0,0),2)
-    pygame.draw.line(screen,"white",axisPoint(0,-length,0),axisPoint(0,length,0),2)
-    pygame.draw.line(screen,"white",axisPoint(0,0,-length),axisPoint(0,0,length),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(-length,0,-length),axisPoint(length,0,-length),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(length,0,-length),axisPoint(length,0,length),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(length,0,length),axisPoint(-length,0,length),2)
+    pygame.draw.line(screen,(40,40,40),axisPoint(-length,0,length),axisPoint(-length,0,-length),2)
 angleX = 0
 angleY = 0
 zoom = 1.0
@@ -283,9 +288,9 @@ async def main():
                         dragging = True
             elif event.type == pygame.MOUSEWHEEL:
                 if event.y > 0:
-                    zoom *= 1.1
+                    zoom *= 1.5
                 elif event.y < 0:
-                    zoom /= 1.1
+                    zoom /= 1.5
                 zoom = max(0.4, min(2.5,zoom))
 
             elif event.type == pygame.MOUSEBUTTONUP:
