@@ -7,6 +7,7 @@ import sys
 pygame.init()
 OG_WIDTH = 1200
 OG_HEIGHT = 1080
+FPS = 60
 POINTS = []
 clock = pygame.time.Clock()
 dragging = False
@@ -15,7 +16,6 @@ N = 1
 L = 0
 M = 0
 PHASE = []
-projectionMatrix = [[1,0,0] , [0,1,0] ,[0,0,0]]
 
 if sys.platform == "emscripten":
     import platform
@@ -26,11 +26,9 @@ if sys.platform == "emscripten":
     platform.window.document.body.style.padding = "0"
     platform.window.document.body.style.overflow = "hidden"
     platform.window.document.body.style.background = "black"
-    FPS = 45
 else:
     WIDTH = OG_WIDTH
     HEIGHT = OG_HEIGHT
-    FPS = 60
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 
 if sys.platform == "emscripten":
@@ -138,7 +136,7 @@ def generateClouds(n,l,m):
     maxRadius = 4.5 * n **2
     maxRadial = radialMax ( n, l ,maxRadius)
     maxAngular = angularMax (l,m)
-    while len(points) < 5000:
+    while len(points) < 10000:
         radius , radialValue = sampleRadius(n,l,maxRadius , maxRadial)
         xi,yj,zk , angularValue = sampleDirection(maxAngular, m ,l )
         screenRadius = (radius /  ((n*n)) *( 0.78+0.08*n))
@@ -157,34 +155,11 @@ def generateClouds(n,l,m):
         PHASE.append((phase,z))
     return points , PHASE
 
-def matrixmultiply(b,a):
-    presult = [ ]
-    for j in range(len(b)):
-        newPoint = []
-        for column in range ( len(a)):
-            temp = 0
-            for i in range (len(a)):
-                temp+= b[j][i] * a[i][column]
-            newPoint.append(temp)
-        presult.append(tuple(newPoint))
-    return presult
-
-def matrix_x_rotation(xAngle):
-    angleCos = math.cos(xAngle)
-    anglagnlesin = math.sin(xAngle)
-    x_matrix = [[1,0,0] , [0,angleCos, - anglagnlesin], [ 0, anglagnlesin , angleCos]]
-    return x_matrix
-
-def matrix_y_rotation(yAngle):
-    angleCos = math.cos(yAngle)
-    angleSin = math.sin(yAngle)
-    y_matrix = [[angleCos ,0,angleSin], [0,1,0] , [-angleSin, 0 , angleCos]]
-    return y_matrix
 
 angleX = 0
 angleY = 0
 zoom = 1.0
-font = pygame.font.SysFont(None,int(30 * SCALE_UI))
+font = pygame.font.SysFont(None,int(20 * SCALE_UI))
 
 class Button:
     def __init__(self, x,y,width, height , text,value ):
@@ -203,33 +178,33 @@ class Button:
     def clicked (self, mousePosition):
         return self.rect.collidepoint (mousePosition)
 
-BUTTON_WIDTH = int(40 * SCALE_UI)
-BUTTON_HEIGHT = int(40 * SCALE_UI)
-BUTTON_GAP = int(10 * SCALE_UI)
-subshellnames = {0:"s" , 1:"p" ,2: "d" , 3: "f" , 4:"g"}
+BUTTON_WIDTH = int(30 * SCALE_UI)
+BUTTON_HEIGHT = int(30 * SCALE_UI)
+BUTTON_GAP = int(5 * SCALE_UI)
+subshellnames = {0:"s" , 1:"p" ,2: "d" , 3: "f" , 4:"g", 5: "h" ,6: "i", 7: "k" , 8: "l" , 9:"m"  }
 nbuttons = []
 
-for i in range ( 1,6):
+for i in range ( 1, 11):
     button = Button(int(30*SCALE_UI),int(100 * SCALE_UI) + (i- 1) *(BUTTON_HEIGHT + BUTTON_GAP) , BUTTON_WIDTH,BUTTON_HEIGHT,f"n ={i}" , i)
     nbuttons.append(button)
 
 def createbuttons_L (N):
     buttons = []
     for l in range(N):
-        button = Button(int(SCALE_UI*120),int(SCALE_UI * 100) + l * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,subshellnames[l],l)
+        button = Button(int(SCALE_UI*70),int(SCALE_UI * 100) + l * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,subshellnames[l],l)
         buttons.append(button)
     return buttons
 
 def createbuttons_M (L):
     buttons = []
     for i , m in enumerate(range(-L,L +1)):
-        button = Button(int(240*SCALE_UI),int(SCALE_UI*100) + i * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,f"m={m}",m)
+        button = Button(int(110*SCALE_UI),int(SCALE_UI*100) + i * (BUTTON_HEIGHT + BUTTON_GAP), BUTTON_WIDTH, BUTTON_HEIGHT,f"m={m}",m)
         buttons.append(button)
     return buttons
 
 lbuttons = createbuttons_L(N)
 mbuttons = createbuttons_M(L)
-
+cameraDistance = 10
 async def main():
     global running
     global dragging
@@ -297,20 +272,24 @@ async def main():
                 angleY += mouseX * 0.01
                 angleX += mouseY * 0.01
 
-        rotaionXmatrix = matrix_x_rotation(angleX)
-        rotationYmatrix = matrix_y_rotation (angleY)
-        rotatedpoints = matrixmultiply (POINTS,  rotaionXmatrix)
-        rotatedpoints = matrixmultiply (rotatedpoints,  rotationYmatrix)
-        projectedPoints = matrixmultiply ( rotatedpoints , projectionMatrix)
-
-        pointstodraw = list(zip(projectedPoints,rotatedpoints, PHASE))
-        pointstodraw.sort(key = lambda pointstodraw : pointstodraw[1][2])
+        
 
         screen.fill("black")
         ZOOMED_SCALE = SCALE * zoom
-        for i, (projectedpoints , rotatedpoints , phasedata) in enumerate ( pointstodraw ):
-            projectedX ,projectedY , _ = projectedpoints
-            _ , _ , rotatedZ = rotatedpoints
+        for (x,y,z), phasedata in zip(POINTS, PHASE):
+            
+            rotatedY = y * math.cos(angleX) + z * math.sin(angleX)
+            rotatedX = x
+            rotatedZ = -y* math.sin(angleX) + z * math.cos( angleX )
+            oldX = rotatedX
+            oldZ = rotatedZ
+            rotatedX = oldX * math.cos(angleY) - oldZ * math.sin(angleY)
+            rotatedZ = oldX * math.sin(angleY) + oldZ * math.cos(angleY)
+
+            prespective = cameraDistance / ( cameraDistance + rotatedZ)
+            projectedX = rotatedX * prespective
+            projectedY = rotatedY * prespective
+            
 
             screenX = WIDTH //2 + int(projectedX * ZOOMED_SCALE)
             screenY = HEIGHT // 2 - int(projectedY * ZOOMED_SCALE)
