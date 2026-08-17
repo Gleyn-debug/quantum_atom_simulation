@@ -154,8 +154,33 @@ def generateClouds(n,l,m):
         points.append((x,y,z))
         PHASE.append((phase,z))
     return points , PHASE
+def axisPoint(x,y,z):
 
+    rotatedY = y * math.cos(angleX) + z * math.sin(angleX)
+    rotatedX = x
+    rotatedZ = -y * math.sin(angleX) + z * math.cos(angleX)
 
+    oldX = rotatedX
+    oldZ = rotatedZ
+
+    rotatedX = oldX * math.cos(angleY) - oldZ * math.sin(angleY)
+    rotatedZ = oldX * math.sin(angleY) + oldZ * math.cos(angleY)
+
+    perspective = cameraDistance / (cameraDistance + rotatedZ)
+
+    projectedX = rotatedX * perspective
+    projectedY = rotatedY * perspective
+
+    screenX = WIDTH // 2 + int(projectedX * SCALE * zoom)
+    screenY = HEIGHT // 2 - int(projectedY * SCALE * zoom)
+    return screenX,screenY
+def drawAxes():
+
+    length =5
+
+    pygame.draw.line(screen,"white",axisPoint(-length,0,0),axisPoint(length,0,0),2)
+    pygame.draw.line(screen,"white",axisPoint(0,-length,0),axisPoint(0,length,0),2)
+    pygame.draw.line(screen,"white",axisPoint(0,0,-length),axisPoint(0,0,length),2)
 angleX = 0
 angleY = 0
 zoom = 1.0
@@ -274,8 +299,9 @@ async def main():
 
         
 
-        screen.fill("black")
         ZOOMED_SCALE = SCALE * zoom
+        screen.fill("black")
+        drawAxes()
         for (x,y,z), phasedata in zip(POINTS, PHASE):
             
             rotatedY = y * math.cos(angleX) + z * math.sin(angleX)
@@ -290,7 +316,7 @@ async def main():
             projectedX = rotatedX * prespective
             projectedY = rotatedY * prespective
             
-
+            projectedX , projectedY 
             screenX = WIDTH //2 + int(projectedX * ZOOMED_SCALE)
             screenY = HEIGHT // 2 - int(projectedY * ZOOMED_SCALE)
 
