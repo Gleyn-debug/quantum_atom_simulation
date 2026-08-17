@@ -7,7 +7,6 @@ import sys
 pygame.init()
 OG_WIDTH = 1200
 OG_HEIGHT = 1080
-FPS = 60
 POINTS = []
 clock = pygame.time.Clock()
 dragging = False
@@ -27,9 +26,11 @@ if sys.platform == "emscripten":
     platform.window.document.body.style.padding = "0"
     platform.window.document.body.style.overflow = "hidden"
     platform.window.document.body.style.background = "black"
+    FPS = 45
 else:
     WIDTH = OG_WIDTH
     HEIGHT = OG_HEIGHT
+    FPS = 60
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
 
 if sys.platform == "emscripten":
@@ -137,7 +138,7 @@ def generateClouds(n,l,m):
     maxRadius = 4.5 * n **2
     maxRadial = radialMax ( n, l ,maxRadius)
     maxAngular = angularMax (l,m)
-    while len(points) < 10000:
+    while len(points) < 5000:
         radius , radialValue = sampleRadius(n,l,maxRadius , maxRadial)
         xi,yj,zk , angularValue = sampleDirection(maxAngular, m ,l )
         screenRadius = (radius /  ((n*n)) *( 0.78+0.08*n))
