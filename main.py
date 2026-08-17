@@ -136,7 +136,7 @@ def generateClouds(n,l,m):
     maxRadius = 4.5 * n **2
     maxRadial = radialMax ( n, l ,maxRadius)
     maxAngular = angularMax (l,m)
-    while len(points) < 10000:
+    while len(points) < 5000:
         radius , radialValue = sampleRadius(n,l,maxRadius , maxRadial)
         xi,yj,zk , angularValue = sampleDirection(maxAngular, m ,l )
         screenRadius = (radius /  ((n*n)) *( 0.78+0.08*n))
