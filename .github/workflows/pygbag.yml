@@ -31,8 +31,29 @@ jobs:
       - name: Install Pygbag
         run: python -m pip install --upgrade pygbag
 
-      - name: Build web version
-        run: python -m pygbag --build "$GITHUB_WORKSPACE"
+      - name: Build Bohr model
+        run: python -m pygbag --build "$GITHUB_WORKSPACE/Bohr's model"
+
+      - name: Build Alpha Scattering
+        run: python -m pygbag --build "$GITHUB_WORKSPACE/alpha-scattering"
+
+      - name: Build Controllable Alpha Scattering
+        run: python -m pygbag --build "$GITHUB_WORKSPACE/controllable_alpha-scattering"
+
+      - name: Build Quantum Atom Model
+        run: python -m pygbag --build "$GITHUB_WORKSPACE/quantum-atom-model"
+
+      - name: Prepare website
+        run: |
+          mkdir -p site/bohr-model
+          mkdir -p site/alpha-scattering
+          mkdir -p site/controllable-alpha-scattering
+          mkdir -p site/quantum-atom-model
+
+          cp -r "Bohr's model/build/web/." site/bohr-model/
+          cp -r "alpha-scattering/build/web/." site/alpha-scattering/
+          cp -r "controllable_alpha-scattering/build/web/." site/controllable-alpha-scattering/
+          cp -r "quantum-atom-model/build/web/." site/quantum-atom-model/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -40,7 +61,7 @@ jobs:
       - name: Upload website
         uses: actions/upload-pages-artifact@v4
         with:
-          path: build/web
+          path: site
 
   deploy:
     runs-on: ubuntu-latest
