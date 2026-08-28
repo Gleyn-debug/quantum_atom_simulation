@@ -55,6 +55,11 @@ jobs:
           cp -r "controllable_alpha-scattering/build/web/." site/controllable-alpha-scattering/
           cp -r "quantum-atom-model/build/web/." site/quantum-atom-model/
 
+      - name: Check website files
+        run: |
+          echo "===== WEBSITE FILES ====="
+          find site -maxdepth 2 -type f -print
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
